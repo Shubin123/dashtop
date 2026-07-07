@@ -1,5 +1,7 @@
 # dashtop
 
+### THIS IS EXPERIMENTAL AND NETWORK INTERFACES NEED CAREFUL ATTENTION
+
 A tiny dashboard that lets a tablet (or any browser) watch a PC's live state
 over the local network. The PC runs a small Python server; the tablet just
 opens a web page — nothing to install on the tablet.
@@ -109,6 +111,7 @@ network only. Don't port-forward it to the internet as-is; if you need remote
 access, put it behind a reverse proxy with auth (or a VPN like WireGuard/
 Tailscale).
 
+ideally before using this program you should ensure some knowledge of your network topology (use nmap).
 
 <br><br>
 <br>
