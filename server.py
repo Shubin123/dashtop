@@ -301,13 +301,20 @@ class Handler(BaseHTTPRequestHandler):
         pass  # keep the console quiet; the startup banner is the useful output
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Serve this PC's live system state over the LAN.")
+def parse_args(argv=None):
+    ap = argparse.ArgumentParser(description="Serve this PC's live system state over the LAN or over ADB-forwarded localhost.")
     ap.add_argument("--host", default="0.0.0.0", help="bind address (default: all interfaces)")
     ap.add_argument("--port", type=int, default=8010, help="port (default: 8010)")
     ap.add_argument("--interval", type=float, default=2.0, help="sample interval in seconds (default: 2)")
     ap.add_argument("--history", type=float, default=15.0, help="minutes of history to keep (default: 15)")
-    args = ap.parse_args()
+    ap.add_argument("--adb", action="store_true", help="serve on localhost and suggest adb reverse for tablet access")
+    return ap.parse_args(argv)
+
+
+def main():
+    args = parse_args()
+    if args.adb:
+        args.host = "127.0.0.1"
 
     sampler = Sampler(interval=args.interval, history_seconds=args.history * 60)
     sampler.start()
@@ -319,10 +326,16 @@ def main():
 
     ip = Handler.info["lan_ip"]
     print(f"dashtop is serving {Handler.info['hostname']} ({Handler.info['os']})")
-    print(f"  On the tablet, open:  http://{ip}:{args.port}")
-    print(f"  On this PC:           http://localhost:{args.port}")
-    if platform.system() == "Windows":
-        print("  If Windows Firewall asks, allow access on Private networks.")
+    if args.adb:
+        print(f"  Serve address:        http://127.0.0.1:{args.port}")
+        print("  Use adb reverse port forwarding to let a connected Android tablet reach it:")
+        print(f"    adb reverse tcp:{args.port} tcp:{args.port}")
+        print(f"  On the tablet, open:  http://127.0.0.1:{args.port}")
+    else:
+        print(f"  On the tablet, open:  http://{ip}:{args.port}")
+        print(f"  On this PC:           http://localhost:{args.port}")
+        if platform.system() == "Windows":
+            print("  If Windows Firewall asks, allow access on Private networks.")
     print("Press Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever()

@@ -566,7 +566,7 @@ function renderSystem() {
     add("Swap", `${fmtBytes(s.mem.swap_used)} of ${fmtBytes(s.mem.swap_total)}`);
   if (s.battery)
     add("Battery", `${s.battery.percent}% ${s.battery.plugged ? "(plugged in)" : ""}`);
-  add("Dashboard", `http://${info.lan_ip}:${location.port || 80}`);
+  add("Dashboard", `http://${location.hostname}:${location.port || 80}`);
   body.append(kv);
   if (s.temps && s.temps.length) {
     const chips = el("div", "chips");
