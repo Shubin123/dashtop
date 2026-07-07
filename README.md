@@ -108,3 +108,24 @@ view the stats (hostname, process names, IP). Run it on a trusted home/LAN
 network only. Don't port-forward it to the internet as-is; if you need remote
 access, put it behind a reverse proxy with auth (or a VPN like WireGuard/
 Tailscale).
+
+
+<br><br>
+<br>
+<br>
+
+
+<img width="794" height="889" alt="image" src="https://github.com/user-attachments/assets/def639bc-3975-4c7d-9632-375f5f28ffae" />
+
+
+
+
+
+
+
+
+
+
+
+
+
