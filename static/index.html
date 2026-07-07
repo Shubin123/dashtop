@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<title>dashtop</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='2' width='14' height='10' rx='2' fill='%232a78d6'/%3E%3Crect x='5' y='13' width='6' height='2' rx='1' fill='%232a78d6'/%3E%3Cpath d='M3 9l3-3 2 2 4-4' stroke='%23fcfcfb' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">dashtop</div>
+  <div class="host-block">
+    <div class="host" id="hostname">connecting…</div>
+    <div class="host-meta" id="host-meta"></div>
+  </div>
+  <div class="status" id="status" role="status">
+    <span class="dot" aria-hidden="true"></span>
+    <span id="status-text">connecting</span>
+  </div>
+</header>
+
+<main>
+  <section class="tiles" id="tiles" aria-label="Current readings"></section>
+
+  <div class="filter-row" aria-label="Chart window">
+    <span class="filter-label">Window</span>
+    <div class="seg" id="window-seg" role="group">
+      <button type="button" data-min="5" class="on" aria-pressed="true">5 min</button>
+      <button type="button" data-min="15" aria-pressed="false">15 min</button>
+    </div>
+  </div>
+
+  <section class="grid charts" id="charts" aria-label="History charts"></section>
+
+  <section class="grid lower">
+    <div class="card" id="cores-card">
+      <div class="card-head"><h2>CPU cores</h2><span class="card-sub" id="cores-sub"></span></div>
+      <div class="card-body" id="cores-body"></div>
+    </div>
+    <div class="card" id="disks-card">
+      <div class="card-head"><h2>Storage</h2></div>
+      <div class="card-body" id="disks-body"></div>
+    </div>
+    <div class="card" id="procs-card">
+      <div class="card-head"><h2>Top processes</h2><span class="card-sub">tap a column to sort</span></div>
+      <div class="card-body" id="procs-body"></div>
+    </div>
+    <div class="card" id="sys-card">
+      <div class="card-head"><h2>System</h2></div>
+      <div class="card-body" id="sys-body"></div>
+    </div>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
