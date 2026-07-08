@@ -23,7 +23,8 @@ The page is fully self-contained — no internet access or CDN needed.
    (Private networks is enough).
 4. The console prints the address, e.g. `http://192.168.1.23:8010`.
    Open that on the tablet.
-If the tablet is USB-connected and you want the dashboard to stay local-only, run the PC server with `--adb` and use:
+
+## If the tablet is USB-connected and you want the dashboard to stay local-only, run the PC server with `--adb` and use:
 
 ```sh
 adb reverse tcp:8010 tcp:8010
