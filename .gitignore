@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .vscode/settings.json
+build/
+dist/
+*.spec.bak
+*.exe
