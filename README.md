@@ -99,9 +99,36 @@ pip install -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
-`tests/test_security.py` covers path traversal, method handling, and header
-hygiene; `tests/test_performance.py` covers sampling cost, response latency,
-payload size, concurrency, and history memory bounds.
+| File | What it covers |
+|---|---|
+| `tests/test_security.py` | Path traversal, method handling, header hygiene, XSS guard |
+| `tests/test_performance.py` | Sampling cost, response latency, payload size, concurrency, history bounds |
+| `tests/test_no_data_leak.py` | Binding isolation (2-interface / "2v2"), no outbound connections, no disk persistence, API field audit, CORS, error hygiene, memory bounds, static sandbox |
+| `tests/test_data_usage.py` | Honest bandwidth/memory/CPU metrics — prints real numbers at runtime |
+| `tests/test_e2e_adb.py` | Full end-to-end with a USB-connected Android tablet (skips if no device) |
+
+## Build (standalone .exe)
+
+```sh
+pip install pyinstaller
+python build.py --zip
+```
+
+Produces `dist/dashtop/` — a self-contained folder with `dashtop.exe` (no
+Python required), the static frontend, and `platform-tools/` (adb) for
+USB‑tethered Android tablets.  `build.py --zip` also creates a zip for
+distribution.
+
+## CI/CD
+
+On every push to `main`, GitHub Actions runs the test suite.  Pushing a
+version tag (`v0.1.0`, `v1.0.0`, etc.) builds the distributable zip and
+attaches it to a GitHub Release automatically.
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ## Security notes
 

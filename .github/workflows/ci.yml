@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ── test on every push / PR ──────────────────────────────────────────
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements-dev.txt
+      - run: pip install pyinstaller
+
+      - name: run test suite
+        run: python -m pytest tests/ -v --tb=short --ignore=tests/test_e2e_adb.py
+        # E2E ADB tests skipped — no android device on CI runners
+
+  # ── build + release on tag ───────────────────────────────────────────
+  build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to upload to releases
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+      - run: pip install pyinstaller
+
+      - name: build distributable
+        run: python build.py --zip
+        # ADB platform-tools won't be present on CI — the build script
+        # prints a warning and continues.  The resulting zip still has
+        # dashtop.exe + static/ for LAN mode.
+
+      - name: upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/dashtop.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
