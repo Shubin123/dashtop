@@ -211,6 +211,8 @@ th button.sorted::after { content: " ↓"; color: var(--muted); }
 
 .cores-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); column-gap: 18px; }
 
+.gpu-sep { border: 0; border-top: 1px solid var(--grid); margin: 10px 0; }
+
 .disk-row { padding: 7px 0; border-bottom: 1px solid var(--grid); }
 .disk-row:last-child { border-bottom: 0; }
 .disk-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }

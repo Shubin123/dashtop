@@ -8,7 +8,9 @@ opens a web page — nothing to install on the tablet.
 
 Shows: CPU (total, per-core, frequency), memory & swap, disk usage per volume,
 disk I/O, network throughput, top processes, uptime, battery and temperatures
-where available. History charts cover the last 5 or 15 minutes and update
+where available. NVIDIA GPUs too (utilization, VRAM, temperature, power, fan,
+clocks) whenever `nvidia-smi` is on PATH — no extra install needed. History
+charts cover the last 5 or 15 minutes and update
 every 2 seconds over Server-Sent Events.
 
 Works on **Windows 10/11** and **Linux** (macOS too). Only dependency: `psutil`.
@@ -104,6 +106,7 @@ python -m pytest tests/ -v
 | `tests/test_security.py` | Path traversal, method handling, header hygiene, XSS guard |
 | `tests/test_performance.py` | Sampling cost, response latency, payload size, concurrency, history bounds |
 | `tests/test_no_data_leak.py` | Binding isolation (2-interface / "2v2"), no outbound connections, no disk persistence, API field audit, CORS, error hygiene, memory bounds, static sandbox |
+| `tests/test_gpu.py` | nvidia-smi parsing (no hardware needed), graceful no-GPU fallback, live GPU sanity — set `DASHTOP_EXPECT_GPU` to assert a specific model |
 | `tests/test_data_usage.py` | Honest bandwidth/memory/CPU metrics — prints real numbers at runtime |
 | `tests/test_e2e_adb.py` | Full end-to-end with a USB-connected Android tablet (skips if no device) |
 

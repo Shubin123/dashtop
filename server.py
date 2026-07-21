@@ -27,11 +27,17 @@ try:
 except ImportError:
     sys.exit("psutil is missing. Install it with:  pip install -r requirements.txt")
 
+import gpu
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 SKIP_FSTYPES = {"squashfs", "tmpfs", "devtmpfs", "overlay", "proc", "sysfs", "iso9660"}
 IDLE_PROC_NAMES = {"System Idle Process", "Idle"}
+
+# nvidia-smi costs ~100–300 ms per call, so GPU stats refresh at their own
+# pace instead of on every sample — sample() stays cheap at short intervals.
+GPU_MIN_INTERVAL = 2.0
 
 
 def lan_ip():
@@ -78,6 +84,11 @@ class Sampler(threading.Thread):
         psutil.cpu_percent(percpu=True)
         for _ in psutil.process_iter(["cpu_percent"]):
             pass
+        # GPU: cached + rate-limited (see GPU_MIN_INTERVAL).  Prime synchronously
+        # so the very first snapshot already carries GPU data when a card exists.
+        self._gpu_ok = gpu.available()
+        self._gpus = gpu.query_gpus() if self._gpu_ok else []
+        self._gpu_t = 0.0
 
     @staticmethod
     def _safe(fn, *args, **kwargs):
@@ -95,6 +106,7 @@ class Sampler(threading.Thread):
                 print(f"[dashtop] sample failed: {exc}", file=sys.stderr)
                 time.sleep(self.interval)
                 continue
+            g0 = snap["gpus"][0] if snap["gpus"] else None
             point = {
                 "t": snap["t"],
                 "cpu": snap["cpu"]["total"],
@@ -103,6 +115,8 @@ class Sampler(threading.Thread):
                 "up": snap["net"]["up_bps"],
                 "rd": snap["io"]["read_bps"],
                 "wr": snap["io"]["write_bps"],
+                "gpu": g0["util"] if g0 else None,
+                "gpumem": g0["vram_percent"] if g0 else None,
             }
             with self.cond:
                 self.latest = snap
@@ -177,6 +191,10 @@ class Sampler(threading.Thread):
                         temps.append({"label": e.label or name, "c": round(e.current, 1)})
         temps = temps[:8]
 
+        if self._gpu_ok and now - self._gpu_t >= GPU_MIN_INTERVAL:
+            self._gpus = gpu.query_gpus()
+            self._gpu_t = now
+
         procs = []
         for p in psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent"]):
             info = p.info
@@ -215,6 +233,7 @@ class Sampler(threading.Thread):
             },
             "battery": battery,
             "temps": temps,
+            "gpus": self._gpus,
             "procs": merged[:12],
         }
 

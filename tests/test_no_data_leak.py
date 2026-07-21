@@ -285,7 +285,7 @@ class TestApiFieldAudit:
         _, _, body = live.request("GET", "/api/summary")
         snap = json.loads(body)["latest"]
         allowed = {"t", "uptime", "cpu", "mem", "disks", "io",
-                   "net", "battery", "temps", "procs"}
+                   "net", "battery", "temps", "gpus", "procs"}
         extra = set(snap.keys()) - allowed
         assert not extra, f"snapshot leaked keys: {extra}"
 
@@ -295,7 +295,7 @@ class TestApiFieldAudit:
         data = json.loads(body)
         if not data["history"]:
             pytest.skip("no history yet")
-        point_allowed = {"t", "cpu", "mem", "dn", "up", "rd", "wr"}
+        point_allowed = {"t", "cpu", "mem", "dn", "up", "rd", "wr", "gpu", "gpumem"}
         for pt in data["history"]:
             extra = set(pt.keys()) - point_allowed
             assert not extra, f"history point leaked keys: {extra}"
@@ -324,6 +324,19 @@ class TestApiFieldAudit:
             extra = set(disk.keys()) - allowed
             assert not extra, f"disk entry leaked keys: {extra}"
 
+    def test_gpu_entries_are_minimal(self, live):
+        """GPU entries: model name + utilization/VRAM/temp/power/fan/clock
+        readings only — no UUIDs, bus IDs, or per-process GPU mappings."""
+        _, _, body = live.request("GET", "/api/summary")
+        snap = json.loads(body)["latest"]
+        allowed = {"name", "util", "mem_util", "vram_used", "vram_total",
+                   "vram_percent", "temp", "power_w", "power_limit_w", "fan",
+                   "clock_mhz", "mem_clock_mhz"}
+        for g in snap.get("gpus", []):
+            extra = set(g.keys()) - allowed
+            assert not extra, f"gpu entry leaked keys: {extra}"
+            assert isinstance(g["name"], str) and "\\" not in g["name"]
+
     def test_net_entry_no_raw_addresses(self, live):
         """Network stats must be counters only — no IP/MAC addresses."""
         _, _, body = live.request("GET", "/api/summary")
@@ -339,7 +352,7 @@ class TestApiFieldAudit:
         import http.client
         conn = http.client.HTTPConnection(live.host, live.port, timeout=5)
         allowed = {"t", "uptime", "cpu", "mem", "disks", "io",
-                   "net", "battery", "temps", "procs"}
+                   "net", "battery", "temps", "gpus", "procs"}
         try:
             conn.request("GET", "/api/stream")
             resp = conn.getresponse()

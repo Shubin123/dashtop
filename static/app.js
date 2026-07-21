@@ -88,10 +88,17 @@ const TILE_DEFS = [
 
 const tileEls = {};
 
-function buildTiles(hasBattery) {
+function buildTiles(hasBattery, hasGpu) {
   const wrap = $("#tiles");
   wrap.textContent = "";
   const defs = TILE_DEFS.slice();
+  if (hasGpu) {
+    defs.push({ key: "gpu", label: "GPU",
+      value: (s) => (s.gpus && s.gpus.length ? fmtPct(s.gpus[0].util) : "—"),
+      sub: (s) => (s.gpus && s.gpus.length
+        ? fmtBytes(s.gpus[0].vram_used) + " of " + fmtBytes(s.gpus[0].vram_total) : ""),
+      spark: (p) => p.gpu, yMax: 100 });
+  }
   if (hasBattery) {
     defs.push({ key: "bat", label: "Battery",
       value: (s) => s.battery ? s.battery.percent + "%" : "—",
@@ -153,6 +160,10 @@ const CHART_DEFS = [
   { id: "mem", title: "Memory usage",
     series: [{ key: "mem", name: "Memory", cssVar: "--series-1" }],
     yMax: 100, fmt: fmtPct1, tickFmt: fmtPct },
+  { id: "gpu", title: "GPU usage", gpuOnly: true,
+    series: [{ key: "gpu", name: "GPU", cssVar: "--series-1" },
+             { key: "gpumem", name: "VRAM", cssVar: "--series-2" }],
+    yMax: 100, fmt: fmtPct1, tickFmt: fmtPct },
   { id: "net", title: "Network throughput",
     series: [{ key: "dn", name: "Down", cssVar: "--series-1" },
              { key: "up", name: "Up", cssVar: "--series-2" }],
@@ -168,7 +179,11 @@ const charts = [];
 function buildCharts() {
   const grid = $("#charts");
   grid.textContent = "";
-  for (const def of CHART_DEFS) charts.push(makeLineChart(grid, def));
+  const hasGpu = !!(state.latest && state.latest.gpus && state.latest.gpus.length);
+  for (const def of CHART_DEFS) {
+    if (def.gpuOnly && !hasGpu) continue;
+    charts.push(makeLineChart(grid, def));
+  }
 }
 
 function makeLineChart(parent, def) {
@@ -470,6 +485,43 @@ function diskSeverity(pct) {
   return "";
 }
 
+function gpuSeverity(pct) {
+  if (pct >= 95) return "crit";
+  if (pct >= 85) return "warn";
+  return "";
+}
+
+function renderGpus() {
+  const s = state.latest;
+  const card = $("#gpu-card");
+  if (!s || !s.gpus || !s.gpus.length) { card.hidden = true; return; }
+  card.hidden = false;
+  const body = $("#gpu-body");
+  body.textContent = "";
+  s.gpus.forEach((g, i) => {
+    if (s.gpus.length > 1) body.append(el("div", "card-sub", g.name));
+    const rows = el("div", "cores-grid");
+    rows.append(meterRow("Util", g.util, fmtPct(g.util)));
+    rows.append(meterRow("VRAM", g.vram_percent, fmtPct(g.vram_percent), gpuSeverity(g.vram_percent)));
+    body.append(rows);
+    const sub = [];
+    sub.push(fmtBytes(g.vram_used) + " of " + fmtBytes(g.vram_total) + " VRAM");
+    body.append(el("div", "card-sub", sub.join("")));
+    const chips = el("div", "chips");
+    if (g.temp != null) chips.append(el("span", "chip", g.temp + "°C"));
+    if (g.power_w != null)
+      chips.append(el("span", "chip", g.power_limit_w
+        ? `${Math.round(g.power_w)} W of ${Math.round(g.power_limit_w)} W`
+        : `${Math.round(g.power_w)} W`));
+    if (g.fan != null) chips.append(el("span", "chip", "fan " + g.fan + "%"));
+    if (g.clock_mhz != null) chips.append(el("span", "chip", g.clock_mhz + " MHz"));
+    if (chips.childNodes.length) body.append(chips);
+    if (i < s.gpus.length - 1) body.append(el("hr", "gpu-sep"));
+  });
+  $("#gpu-sub").textContent =
+    s.gpus[0].name + (s.gpus.length > 1 ? ` +${s.gpus.length - 1} more` : "");
+}
+
 function renderDisks() {
   const s = state.latest;
   if (!s) return;
@@ -598,6 +650,7 @@ function renderAll() {
   renderTiles();
   for (const c of charts) c.render();
   renderCores();
+  renderGpus();
   renderDisks();
   renderProcs();
   renderSystem();
@@ -639,10 +692,12 @@ function openStream() {
     try { snap = JSON.parse(ev.data); } catch { return; }
     state.latest = snap;
     state.lastMsgAt = Date.now();
+    const g0 = snap.gpus && snap.gpus.length ? snap.gpus[0] : null;
     state.history.push({
       t: snap.t, cpu: snap.cpu.total, mem: snap.mem.percent,
       dn: snap.net.down_bps, up: snap.net.up_bps,
       rd: snap.io.read_bps, wr: snap.io.write_bps,
+      gpu: g0 ? g0.util : null, gpumem: g0 ? g0.vram_percent : null,
     });
     pruneHistory();
     setStatus("live", "live");
@@ -690,7 +745,8 @@ async function boot() {
     setTimeout(boot, 3000);
     return;
   }
-  buildTiles(!!(state.latest && state.latest.battery));
+  buildTiles(!!(state.latest && state.latest.battery),
+             !!(state.latest && state.latest.gpus && state.latest.gpus.length));
   buildCharts();
   state.lastMsgAt = Date.now();
   renderAll();
